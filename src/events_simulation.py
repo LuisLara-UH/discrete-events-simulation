@@ -1,37 +1,106 @@
+from event import AfterBreakup, BirthDay, Birth, Breakup
 from person import Person, Male, Female
 from random_variables_simulation import exponential, uniform
+from variables_simulation import *
 
-pregnancy_age_ranges = [(12,15), (16,21), (22,35), (36,45), (46,60), (61,125)]
-pregnancy_probs = [0.2, 0.45, 0.8, 0.4, 0.2, 0.05]
+def simulate_birth(date: int, mother: Female, father: Male, population: list):
+    events = []
 
+    if mother.is_dead:
+        return []
 
-def posible_pregnancy(female: Female):
-    if not female.has_couple or female.couple is None or not female.can_get_pregnancy or female.is_pregnant:
-        return False
+    childs = birth_childs()
+    for _ in range(childs):
+        child = Person(0)
+        population.append(child)
+        events.append(BirthDay(date + 12, child))
 
-    if female.childs > female.expected_childs or female.couple.childs > female.couple.expected_childs:
-        return False
+    mother.is_pregnant = False
+    mother.childs += childs
+    father.childs += childs
 
-    return True
+    return events
 
-def can_get_pregnancy(person: Female):
-    for i in range(len(pregnancy_age_ranges)):
-        if person.actual_age >= pregnancy_age_ranges[i][0] and person.actual_age <= pregnancy_age_ranges[i][0]:
-            U = uniform(0, 1)
-            return U <= pregnancy_probs[i]
+age_ranges_start = [12, 16, 22, 36, 46, 61]
 
-    return False
+def simulate_birthday(date: int, person: Person, poblation: list):
+    if person.is_dead:
+        return []
 
-age_difference_ranges = [(0,5), (6,10), (11, 15), (16, 20), (21,126)]
-get_partner_prob = [0.45, 0.40, 0.35, 0.25, 0.15]
+    person.actual_age += 1
 
-def simulate_partner_search(person: Person, poblation: list):
+    events = []
+    events.append(BirthDay(date + 12, person))
+
+    for age in age_ranges_start:
+        if person.actual_age == age:
+            if not person.has_couple:
+                person.wants_couple = wants_couple(person)
+            if not person.is_male:
+                person.can_get_pregnancy = can_get_pregnancy(person)
+
+    if not person.has_couple:
+        events += simulate_partner_search(date, person, poblation)
+
+    return events
+
+def simulate_partner_search(date: int, person: Person, poblation: list):
+    if person.is_dead:
+        return []
+
+    events = []
+
     for posible_partner in poblation:
-        pass
+        if relationship(person, posible_partner):
+            person.has_couple = True
+            person.couple = posible_partner
 
-def relationship(person1: Person, person2: Person):
-    if not ((person1.is_male and not person2.is_male) or (not person1.is_male and person2.is_male)):
-        return False
+            posible_partner.has_couple = True
+            posible_partner.couple = person
 
-    if person1.is_dead or person2.is_dead:
-        return False
+            girlfriend = person
+            boyfriend = posible_partner
+            if person.is_male:
+                boyfriend = person
+                girlfriend = posible_partner
+
+            if breakup():
+                events.append(Breakup(time_to_breakup(), girlfriend, boyfriend))
+
+            if posible_pregnancy(girlfriend):
+                girlfriend.is_pregnant = True
+                events.append(Birth(date, mother=girlfriend, father=boyfriend))
+
+            return events
+
+def simulate_desease(date: int, person: Person):
+    person.is_dead = True
+    if person.has_couple:
+        return simulate_breakup(date, person, person.couple)
+
+    return []
+
+def simulate_breakup(date: int, person1: Person, person2: Person):
+    person1.has_couple = False
+    person2.has_couple = False
+
+    person1.couple = None
+    person2.couple = None
+
+    after_breakups = []
+
+    if not person1.is_dead:
+        after_breakups.append(AfterBreakup(date + after_breakup_time(person1), person1))
+
+    if not person2.is_dead:
+        after_breakups.append(AfterBreakup(date + after_breakup_time(person2), person2))
+
+    return after_breakups
+
+def simulate_after_breakup(date: int, person: Person, poblation: list):
+    if person.is_dead:
+        return []
+    
+    person.wants_couple = wants_couple(person)
+
+    return simulate_partner_search(date, person, poblation)
