@@ -1,5 +1,4 @@
 from random_variables_simulation import *
-from person import Person, Female, Male
 
 desease_age_ranges = [(0,12), (13,45), (46,76), (77,125)]
 
@@ -26,7 +25,7 @@ def desease_range_age(male: bool, actual_age):
 
     for i in range(4):
         U = uniform(0, 1)
-        if U <= desease_age_range_probs[i] and actual_age <= desease_age_ranges[1]:
+        if U <= desease_age_range_probs[i] and actual_age <= desease_age_ranges[i][0]:
             # return index of age range
             return i
 
@@ -36,11 +35,11 @@ def desease_range_age(male: bool, actual_age):
 breakup_time_age_ranges = [(12,15), (16,21), (22,35), (36,45), (46,60), (61,125)]
 breakup_time_parameter = [3, 6, 6, 12, 24, 48]
 
-def after_breakup_time(person: Person):
+def after_breakup_time(person):
     age = person.actual_age
     h = 48
     for i in range(len(breakup_time_age_ranges)):
-        if age >= breakup_time_age_ranges[0] and age <= breakup_time_age_ranges[1]:
+        if age >= breakup_time_age_ranges[i][0] and age <= breakup_time_age_ranges[i][1]:
             h = breakup_time_parameter[i]
 
     return int(exponential(h))
@@ -59,7 +58,7 @@ def expected_number_of_childs():
 want_couple_age_range = [(12,15), (16,21), (22,35), (36,45), (46,60), (61,125)]
 want_couple_prob = [0.6, 0.65, 0.8, 0.6, 0.5, 0.2]
 
-def wants_couple(person: Person):
+def wants_couple(person):
     for i in range(len(want_couple_age_range)):
         if person.actual_age >= want_couple_age_range[i][0] and person.actual_age <= want_couple_age_range[i][1]:
             U = uniform(0, 1)
@@ -72,8 +71,8 @@ def wants_couple(person: Person):
 pregnancy_age_ranges = [(12,15), (16,21), (22,35), (36,45), (46,60), (61,125)]
 pregnancy_probs = [0.2, 0.45, 0.8, 0.4, 0.2, 0.05]
 
-def posible_pregnancy(female: Female):
-    if not female.has_couple or female.couple is None or not female.can_get_pregnancy or female.is_pregnant:
+def posible_pregnancy(female):
+    if (not female.has_couple) or (not female.can_get_pregnancy) or female.is_pregnant:
         return False
 
     if female.childs > female.expected_childs or female.couple.childs > female.couple.expected_childs:
@@ -81,7 +80,7 @@ def posible_pregnancy(female: Female):
 
     return True
 
-def can_get_pregnancy(person: Female):
+def can_get_pregnancy(person):
     for i in range(len(pregnancy_age_ranges)):
         if person.actual_age >= pregnancy_age_ranges[i][0] and person.actual_age <= pregnancy_age_ranges[i][0]:
             U = uniform(0, 1)
@@ -92,7 +91,7 @@ def can_get_pregnancy(person: Female):
 age_difference_ranges = [(0,5), (6,10), (11, 15), (16, 20), (21,126)]
 get_partner_prob = [0.45, 0.40, 0.35, 0.25, 0.15]
 
-def relationship(person1: Person, person2: Person):
+def relationship(person1, person2):
     if not ((person1.is_male and not person2.is_male) or (not person1.is_male and person2.is_male)):
         return False
 
